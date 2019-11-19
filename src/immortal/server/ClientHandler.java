@@ -4,16 +4,21 @@ import java.io.*;
 import java.net.Socket;
 
 public class ClientHandler extends Thread {
-    private ServerCore server;
+    private Server server;
     private Socket socket;
-    private InputStreamReader inputStream;
-    private OutputStreamWriter outputStream;
+    private PrintWriter textOutput;
+    private BufferedReader textInput;
 
-    ClientHandler(ServerCore server, Socket socket) throws IOException {
+    ClientHandler(Server server, Socket socket) {
         this.server = server;
         this.socket = socket;
-        this.inputStream = new InputStreamReader(socket.getInputStream());
-        this.outputStream = new OutputStreamWriter(socket.getOutputStream());
+
+        try {
+            textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            textOutput = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
         System.out.println("Client connected: " + socket.getPort());
         sendMessage(new Message(this, "Connected to server on port: " + socket.getPort()));
@@ -23,21 +28,19 @@ public class ClientHandler extends Thread {
 
     @Override
     public void run() {
-        BufferedReader br = new BufferedReader(inputStream);
         String data;
 
         try {
-            while((data = br.readLine()) != null) {
+            while((data = textInput.readLine()) != null) {
                 server.pushMessage(new Message(this, data));
             }
-        } catch(IOException e) {
-            e.printStackTrace();
+        } catch(IOException ex) {
+            ex.printStackTrace();
         }
     }
 
-    void sendMessage(Message message) throws IOException {
-        outputStream.write(message.data + "\n");
-        outputStream.flush();
+    void sendMessage(Message message) {
+        textOutput.println(message.data);
     }
 
     String getClientName() {

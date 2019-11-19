@@ -7,13 +7,18 @@ import java.util.Scanner;
 
 public class Client {
     private Socket socket;
-    private PrintWriter textOutput;
     private BufferedReader textInput;
+    private PrintWriter textOutput;
 
-    private Client(String ip, int port) throws Exception {
-        socket = new Socket(ip, port);
-        textOutput = new PrintWriter(socket.getOutputStream(), true);
-        textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    private Client(String ip, int port) {
+        try {
+            socket = new Socket(ip, port);
+
+            textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            textOutput = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
         new Thread(this::textInput).start();
 
@@ -31,8 +36,8 @@ public class Client {
             while((data = textInput.readLine()) != null) {
                 System.out.println(socket.getInetAddress() +":"+ socket.getPort() + ": " + data);
             }
-        } catch(Exception e) {
-            e.printStackTrace();
+        } catch(IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -40,12 +45,8 @@ public class Client {
         Scanner sc = new Scanner(System.in);
         String data;
 
-        try {
-            while((data = sc.nextLine()) != null) {
-                textOutput.println(data);
-            }
-        } catch(Exception e) {
-            e.printStackTrace();
+        while((data = sc.nextLine()) != null) {
+            textOutput.println(data);
         }
     }
 
@@ -56,22 +57,23 @@ public class Client {
             TargetDataLine microphone = AudioSystem.getTargetDataLine(format);
 
             if (!AudioSystem.isLineSupported(microphone.getLineInfo())) {
-                throw new Exception("TargetDataLine is not supported");
+                throw new IOException("TargetDataLine is not supported");
             }
 
             microphone.open();
             microphone.start();
 
-            byte[] data = new byte[microphone.getBufferSize() / 5];
             DatagramSocket ds = new DatagramSocket();
+
+            byte[] data = new byte[microphone.getBufferSize() / 5];
 
             while (true) {
                 microphone.read(data, 0, data.length);
                 DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName("localhost"), 5858);
                 ds.send(packet);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException | LineUnavailableException ex) {
+            ex.printStackTrace();
         }
     }
 
