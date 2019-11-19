@@ -1,13 +1,8 @@
 package immortal.server;
 
 import immortal.audio.Audio;
-
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.SourceDataLine;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.ServerSocket;
+import java.net.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -45,27 +40,23 @@ public class Server {
     }
 
     private void audioInput() {
+        String clientAddress = "localhost";
+        int clientPort = 5757;
+
+        byte[] buffer = new byte[Audio.BUFFER_SIZE];
+
         try {
-            SourceDataLine speaker = AudioSystem.getSourceDataLine(Audio.FORMAT);
-
-            if (!AudioSystem.isLineSupported(speaker.getLineInfo())) {
-                throw new IOException("TargetDataLine is not supported");
-            }
-
-            speaker.open();
-            speaker.start();
-
-            byte[] buffer = new byte[Audio.BUFFER_SIZE];
-
-            DatagramSocket udp = new DatagramSocket(5858);
-            DatagramPacket packet = new DatagramPacket(buffer, Audio.BUFFER_SIZE);
+            DatagramSocket udpR = new DatagramSocket(5858);
+            DatagramPacket packetR = new DatagramPacket(buffer, Audio.BUFFER_SIZE);
+            DatagramSocket udpS = new DatagramSocket();
+            DatagramPacket packetS = new DatagramPacket(buffer, Audio.BUFFER_SIZE, InetAddress.getByName(clientAddress), clientPort);
 
             while (true) {
-                udp.receive(packet);
-                speaker.write(buffer, 0, Audio.BUFFER_SIZE);
+                udpR.receive(packetR);
+                udpS.send(packetS);
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

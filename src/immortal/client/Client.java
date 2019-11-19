@@ -26,6 +26,8 @@ public class Client {
 
         new Thread(this::textOutput).start();
 
+        new Thread(this::audioInput).start();
+
         new Thread(this::audioOutput).start();
 
         System.out.println("client started on: " + socket);
@@ -52,7 +54,35 @@ public class Client {
         }
     }
 
+    private void audioInput() {
+        try {
+            SourceDataLine speaker = AudioSystem.getSourceDataLine(Audio.FORMAT);
+
+            if (!AudioSystem.isLineSupported(speaker.getLineInfo())) {
+                throw new IOException("TargetDataLine is not supported");
+            }
+
+            speaker.open();
+            speaker.start();
+
+            byte[] buffer = new byte[Audio.BUFFER_SIZE];
+
+            DatagramSocket udp = new DatagramSocket(5757);
+            DatagramPacket packet = new DatagramPacket(buffer, Audio.BUFFER_SIZE);
+
+            while (true) {
+                udp.receive(packet);
+                speaker.write(buffer, 0, Audio.BUFFER_SIZE);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     private void audioOutput() {
+        String serverAddress = "localhost";
+        int serverPort = 5858;
+
         try {
             TargetDataLine microphone = AudioSystem.getTargetDataLine(Audio.FORMAT);
 
@@ -66,7 +96,7 @@ public class Client {
             byte[] buffer = new byte[Audio.BUFFER_SIZE];
 
             DatagramSocket udp = new DatagramSocket();
-            DatagramPacket packet = new DatagramPacket(buffer, Audio.BUFFER_SIZE, InetAddress.getByName("localhost"), 5858);
+            DatagramPacket packet = new DatagramPacket(buffer, Audio.BUFFER_SIZE, InetAddress.getByName(serverAddress), serverPort);
 
             while (true) {
                 microphone.read(buffer, 0, Audio.BUFFER_SIZE);
