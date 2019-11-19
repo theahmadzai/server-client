@@ -21,9 +21,7 @@ public class ClientHandler extends Thread {
         }
 
         System.out.println("Client connected: " + socket.getPort());
-        sendMessage(new Message(this, "Connected to server on port: " + socket.getPort()));
-
-        this.start();
+        sendMessage(new Message(this, "Connected to server on port [" + socket.getPort() + "]"));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package immortal.client;
 
+import immortal.audio.Audio;
+
 import javax.sound.sampled.*;
 import java.io.*;
 import java.net.*;
@@ -51,10 +53,8 @@ public class Client {
     }
 
     private void audioOutput() {
-        AudioFormat format = new AudioFormat(8000.0f, 16, 1, true, true);
-
         try {
-            TargetDataLine microphone = AudioSystem.getTargetDataLine(format);
+            TargetDataLine microphone = AudioSystem.getTargetDataLine(Audio.FORMAT);
 
             if (!AudioSystem.isLineSupported(microphone.getLineInfo())) {
                 throw new IOException("TargetDataLine is not supported");
@@ -63,21 +63,21 @@ public class Client {
             microphone.open();
             microphone.start();
 
-            DatagramSocket ds = new DatagramSocket();
+            byte[] buffer = new byte[Audio.BUFFER_SIZE];
 
-            byte[] data = new byte[microphone.getBufferSize() / 5];
+            DatagramSocket udp = new DatagramSocket();
+            DatagramPacket packet = new DatagramPacket(buffer, Audio.BUFFER_SIZE, InetAddress.getByName("localhost"), 5858);
 
             while (true) {
-                microphone.read(data, 0, data.length);
-                DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName("localhost"), 5858);
-                ds.send(packet);
+                microphone.read(buffer, 0, Audio.BUFFER_SIZE);
+                udp.send(packet);
             }
         } catch (IOException | LineUnavailableException ex) {
             ex.printStackTrace();
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         new Client("localhost", 5959);
     }
 }
