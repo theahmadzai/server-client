@@ -9,14 +9,14 @@ public class ClientHandler extends Thread {
     private InputStreamReader inputStream;
     private OutputStreamWriter outputStream;
 
-    public ClientHandler(ServerCore server, Socket socket) throws IOException {
+    ClientHandler(ServerCore server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.inputStream = new InputStreamReader(socket.getInputStream());
         this.outputStream = new OutputStreamWriter(socket.getOutputStream());
 
         System.out.println("Client connected: " + socket.getPort());
-        sendMessage(new Message(this, "Connected to server on port: " + String.valueOf(socket.getPort())));
+        sendMessage(new Message(this, "Connected to server on port: " + socket.getPort()));
 
         this.start();
     }
@@ -24,21 +24,23 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         BufferedReader br = new BufferedReader(inputStream);
-        String data = null;
+        String data;
 
         try {
             while((data = br.readLine()) != null) {
                 server.pushMessage(new Message(this, data));
             }
-        } catch(IOException ex) {}
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void sendMessage(Message message) throws IOException {
+    void sendMessage(Message message) throws IOException {
         outputStream.write(message.data + "\n");
         outputStream.flush();
     }
 
-    public String getClientName() {
+    String getClientName() {
         return String.valueOf(socket.getPort());
     }
 }

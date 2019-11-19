@@ -1,10 +1,10 @@
 package immortal.server;
 
-public class Message {
-    public ClientHandler client;
-    public String data;
+class Message {
+    ClientHandler client;
+    String data;
 
-    public Message(ClientHandler client, String data) {
+    Message(ClientHandler client, String data) {
         this.client = client;
         this.data = data;
     }
