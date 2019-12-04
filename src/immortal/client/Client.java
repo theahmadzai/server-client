@@ -3,23 +3,30 @@ package immortal.client;
 import immortal.audio.Audio;
 
 import javax.sound.sampled.*;
+import javax.swing.*;
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
 
-public class Client {
+class Client {
     private Socket socket;
     private BufferedReader textInput;
     private PrintWriter textOutput;
+    private JTextField textInputComponent;
+    private JTextPane textOutputComponent;
 
-    private Client(String ip, int port) {
+    // USE SINGLETON SO CAN'T CONNECT TWO TIMES
+    Client(String ip, int port, JTextPane a, JTextField b) {
+        textOutputComponent = a;
+        textInputComponent = b;
+
         try {
             socket = new Socket(ip, port);
 
             textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             textOutput = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return;
         }
 
         new Thread(this::textInput).start();
@@ -30,7 +37,7 @@ public class Client {
 
         new Thread(this::audioOutput).start();
 
-        System.out.println("client started on: " + socket);
+        textOutputComponent.setText("client started on: " + socket);
     }
 
     private void textInput() {
@@ -38,7 +45,7 @@ public class Client {
 
         try {
             while((data = textInput.readLine()) != null) {
-                System.out.println(socket.getInetAddress() +":"+ socket.getPort() + ": " + data);
+                textOutputComponent.setText(socket.getInetAddress() +":"+ socket.getPort() + ": " + data);
             }
         } catch(IOException ex) {
             ex.printStackTrace();
@@ -46,12 +53,7 @@ public class Client {
     }
 
     private void textOutput() {
-        Scanner sc = new Scanner(System.in);
-        String data;
-
-        while((data = sc.nextLine()) != null) {
-            textOutput.println(data);
-        }
+        textOutput.println(textInputComponent.getText());
     }
 
     private void audioInput() {
@@ -107,7 +109,7 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) {
-        new Client("localhost", 5959);
+    void sendMessage() {
+        textOutput();
     }
 }

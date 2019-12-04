@@ -10,32 +10,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-    private ServerSocket serverSocket;
     private List<ClientHandler> clients = new LinkedList<>();
 
     private Server(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
+        try(ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server started on: " + serverSocket);
+
+            new Thread(this::textInput).start();
+            new Thread(this::audioInput).start();
+
+            ExecutorService pool = Executors.newFixedThreadPool(3);
+
+            while(!serverSocket.isClosed()) {
+                try {
+                    ClientHandler client = new ClientHandler(this, serverSocket.accept());
+                    clients.add(client);
+                    pool.execute(client);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
-        }
-
-        new Thread(this::textInput).start();
-
-        new Thread(this::audioInput).start();
-
-        System.out.println("Server started on: " + serverSocket);
-
-        ExecutorService pool = Executors.newFixedThreadPool(3);
-
-        while(!serverSocket.isClosed()) {
-            try {
-                ClientHandler client = new ClientHandler(this, serverSocket.accept());
-                clients.add(client);
-                pool.execute(client);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
         }
     }
 
