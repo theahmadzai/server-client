@@ -28,7 +28,6 @@ public class Gui extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         this.client = client;
-        System.out.println(this.client);
 
         connectButton.addActionListener(e -> client.connect(ipAddressTextField.getText(), 5959));
         sendButton.addActionListener(e -> sendMessage(messageTextField.getText()));
