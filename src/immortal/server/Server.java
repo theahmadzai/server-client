@@ -6,8 +6,6 @@ import java.net.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Server {
     private List<ClientHandler> clients = new LinkedList<>();
@@ -16,22 +14,25 @@ public class Server {
         try(ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started on: " + serverSocket);
 
-            new Thread(this::textInput).start();
-            new Thread(this::audioInput).start();
-
-            ExecutorService pool = Executors.newFixedThreadPool(3);
+//            new Thread(this::textInput).start();
+//            new Thread(this::audioInput).start();
 
             while(!serverSocket.isClosed()) {
                 try {
-                    ClientHandler client = new ClientHandler(this, serverSocket.accept());
-                    clients.add(client);
-                    pool.execute(client);
+                    ClientHandler clientHandler = new ClientHandler(this, serverSocket.accept());
+                    clients.add(clientHandler);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             }
         } catch (IOException ex) {
             ex.printStackTrace();
+        }
+    }
+
+    public void broadCastText(String text) {
+        for(ClientHandler client : clients) {
+            client.textStreamOut(text);
         }
     }
 
@@ -63,13 +64,9 @@ public class Server {
         while (sc.hasNext()) {
             data = sc.nextLine();
             for (ClientHandler client : clients) {
-                client.sendMessage(new Message(client, data));
+                client.textStreamOut(data);
             }
         }
-    }
-
-    void pushMessage(Message message) {
-        System.out.println(message.client.getClientName() + ": " + message.data);
     }
 
     public static void main(String[] args) {

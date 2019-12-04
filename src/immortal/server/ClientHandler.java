@@ -1,47 +1,39 @@
 package immortal.server;
 
+import immortal.network.TextChannel;
+import immortal.network.TextTransfer;
+
 import java.io.*;
 import java.net.Socket;
 
-public class ClientHandler extends Thread {
+public class ClientHandler implements TextChannel {
     private Server server;
     private Socket socket;
-    private PrintWriter textOutput;
-    private BufferedReader textInput;
+    private TextTransfer textTransfer;
 
     ClientHandler(Server server, Socket socket) {
         this.server = server;
         this.socket = socket;
 
         try {
-            textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            textOutput = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            textTransfer = new TextTransfer(socket);
+            textTransfer.addChannel(this);
+
+            textTransfer.sendText("Connected to server on port [" + socket.getPort() + "]");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("Client connected: " + socket.getPort());
-        sendMessage(new Message(this, "Connected to server on port [" + socket.getPort() + "]"));
+        textStreamIn("Client connected: " + socket.getPort());
     }
 
     @Override
-    public void run() {
-        String data;
-
-        try {
-            while((data = textInput.readLine()) != null) {
-                server.pushMessage(new Message(this, data));
-            }
-        } catch(IOException ex) {
-            ex.printStackTrace();
-        }
+    public void textStreamIn(String text) {
+        server.broadCastText(socket.getPort() + ": " + text);
     }
 
-    void sendMessage(Message message) {
-        textOutput.println(message.data);
-    }
-
-    String getClientName() {
-        return String.valueOf(socket.getPort());
+    @Override
+    public void textStreamOut(String text) {
+        textTransfer.sendText(text);
     }
 }

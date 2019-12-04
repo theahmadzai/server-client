@@ -1,59 +1,54 @@
 package immortal.client;
 
 import immortal.audio.Audio;
+import immortal.network.TextChannel;
+import immortal.network.TextTransfer;
 
 import javax.sound.sampled.*;
-import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 
-class Client {
+public class Client implements TextChannel {
     private Socket socket;
-    private BufferedReader textInput;
-    private PrintWriter textOutput;
-    private JTextField textInputComponent;
-    private JTextPane textOutputComponent;
+    private TextTransfer textTransfer;
+    private Gui gui;
 
-    // USE SINGLETON SO CAN'T CONNECT TWO TIMES
-    Client(String ip, int port, JTextPane a, JTextField b) {
-        textOutputComponent = a;
-        textInputComponent = b;
+    private Client() {
+        gui = new Gui(this);
+//        new Thread(this::audioInput).start();
+//        new Thread(this::audioOutput).start();
+    }
 
-        try {
-            socket = new Socket(ip, port);
-
-            textInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            textOutput = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null, ex.getMessage());
+    public void connect(String ip, int port) {
+        if (isConnected()) {
+            gui.showMessage("Already connected", Color.RED);
             return;
         }
 
-        new Thread(this::textInput).start();
-
-        new Thread(this::textOutput).start();
-
-        new Thread(this::audioInput).start();
-
-        new Thread(this::audioOutput).start();
-
-        textOutputComponent.setText("client started on: " + socket);
-    }
-
-    private void textInput() {
-        String data;
-
         try {
-            while((data = textInput.readLine()) != null) {
-                textOutputComponent.setText(socket.getInetAddress() +":"+ socket.getPort() + ": " + data);
-            }
-        } catch(IOException ex) {
-            ex.printStackTrace();
+            socket = new Socket(ip, port);
+            textTransfer = new TextTransfer(socket);
+            textTransfer.addChannel(this);
+
+            gui.showMessage("client started on: " + socket, Color.GREEN);
+        } catch (IOException ex) {
+            gui.showMessage(ex.getMessage(), Color.RED);
         }
     }
 
-    private void textOutput() {
-        textOutput.println(textInputComponent.getText());
+    public boolean isConnected() {
+        return socket != null && socket.isConnected();
+    }
+
+    @Override
+    public void textStreamIn(String text) {
+        gui.showMessage(text, Color.BLACK);
+    }
+
+    @Override
+    public void textStreamOut(String text) {
+        textTransfer.sendText(text);
     }
 
     private void audioInput() {
@@ -109,7 +104,7 @@ class Client {
         }
     }
 
-    void sendMessage() {
-        textOutput();
+    public static void main(String[] args) {
+        new Client();
     }
 }
