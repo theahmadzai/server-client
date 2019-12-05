@@ -1,42 +1,58 @@
 package immortal.server;
 
 import immortal.audio.Audio;
+
+import java.awt.*;
 import java.io.IOException;
 import java.net.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
-public class Server {
-    private List<ClientHandler> clients = new LinkedList<>();
+public class Server extends Thread {
+    private ServerSocket serverSocket;
+    private Map<String, ClientHandler> clients = new HashMap<>();
+    private Gui gui;
 
-    private Server(int port) {
-        try(ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server started on: " + serverSocket);
+    public Server(Gui gui, int port) {
+        this.gui = gui;
 
-//            new Thread(this::textInput).start();
+        try {
+            serverSocket = new ServerSocket(port);
+            gui.showMessage("Server started on: " + serverSocket, Color.GREEN);
+
 //            new Thread(this::audioInput).start();
+            new Thread(this::listenClients).start();
 
-            while(!serverSocket.isClosed()) {
-                try {
-                    ClientHandler clientHandler = new ClientHandler(this, serverSocket.accept());
-                    clients.add(clientHandler);
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
+
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
+    public void listenClients() {
+        while (!serverSocket.isClosed()) {
+            try {
+                ClientHandler clientHandler = new ClientHandler(this, serverSocket.accept());
+                clients.put(clientHandler.getUsername(), clientHandler);
+
+                broadCastText("<ADD USERNAME>" + clients.keySet());
+                gui.updateSessionsList(clients.keySet().toString());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public void log(String message) {
+        gui.showMessage(message, Color.PINK);
+    }
+
     public void broadCastText(String text) {
-        for(ClientHandler client : clients) {
+        for(ClientHandler client : clients.values()) {
             client.textStreamOut(text);
         }
     }
 
-    private void audioInput() {
+    private void streamAudio() {
         String clientAddress = "localhost";
         int clientPort = 5757;
 
@@ -57,19 +73,7 @@ public class Server {
         }
     }
 
-    private void textInput() {
-        Scanner sc = new Scanner(System.in);
-        String data;
-
-        while (sc.hasNext()) {
-            data = sc.nextLine();
-            for (ClientHandler client : clients) {
-                client.textStreamOut(data);
-            }
-        }
-    }
-
     public static void main(String[] args) {
-        new Server(5959);
+        new Gui();
     }
 }

@@ -6,19 +6,20 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class Gui extends JFrame {
+    private JPanel rootPanel;
     private JTextField ipAddressTextField;
     private JButton connectButton;
-    private JPanel rootPanel;
     private JTextField messageTextField;
     private JButton sendButton;
-    private JList sessionList;
+    private JList<String> sessionList;
     private JTextPane messagesTextPane;
     private Client client;
+    DefaultListModel<String> dlm = new DefaultListModel<String>();
+
 
     public Gui(Client client) {
         setTitle("Client Application");
@@ -28,6 +29,7 @@ public class Gui extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         this.client = client;
+        sessionList.setModel(dlm);
 
         connectButton.addActionListener(e -> client.connect(ipAddressTextField.getText(), 5959));
         sendButton.addActionListener(e -> sendMessage(messageTextField.getText()));
@@ -42,6 +44,15 @@ public class Gui extends JFrame {
 
         setVisible(true);
         pack();
+    }
+
+    public void addUser(String usersList) {
+        dlm.removeAllElements();
+
+        String[] users = usersList.substring(1, usersList.length()-1).split(", ");
+        for(String user : users) {
+            dlm.addElement(user);
+        }
     }
 
     public void showMessage(String message, Color color) {

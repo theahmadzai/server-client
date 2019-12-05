@@ -43,6 +43,10 @@ public class Client implements TextChannel {
 
     @Override
     public void textStreamIn(String text) {
+        if(text.startsWith("<ADD USERNAME>")) {
+            gui.addUser(text.substring("<SET USERNAME>".length()));
+            return;
+        }
         gui.showMessage(text, Color.BLACK);
     }
 

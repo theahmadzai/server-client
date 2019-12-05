@@ -20,11 +20,16 @@ public class ClientHandler implements TextChannel {
             textTransfer.addChannel(this);
 
             textTransfer.sendText("Connected to server on port [" + socket.getPort() + "]");
-        } catch (IOException e) {
-            e.printStackTrace();
+            server.log("Connected to server on port [" + socket.getPort() + "]");
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
 
-        textStreamIn("Client connected: " + socket.getPort());
+        server.broadCastText("Client connected: " + socket.getPort());
+    }
+
+    public String getUsername() {
+        return String.valueOf(socket.getPort());
     }
 
     @Override
